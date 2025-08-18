@@ -1,0 +1,63 @@
+apiVersion: v1
+entries:
+  parcial-1:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2025-08-18T15:29:49.953013805-05:00"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.26
+    description: A Helm chart for deploying the frontend and backend applications
+      with PostgreSQL
+    digest: f90ae77c8972236fd15d449c23caa0ce0f72ea4dc1427f4d3a7ea8dc8aa6dc55
+    name: parcial-1
+    type: application
+    urls:
+    - https://EstebanForero.github.io/parcial-1/parcial-1-0.1.0.tgz
+    version: 0.1.0
+  postgresql:
+  - annotations:
+      category: Database
+      images: |
+        - name: os-shell
+          image: docker.io/bitnami/os-shell:12-debian-12-r50
+        - name: postgres-exporter
+          image: docker.io/bitnami/postgres-exporter:0.17.1-debian-12-r15
+        - name: postgresql
+          image: docker.io/bitnami/postgresql:17.6.0-debian-12-r0
+      licenses: Apache-2.0
+      tanzuCategory: service
+    apiVersion: v2
+    appVersion: 17.6.0
+    created: "2025-08-18T15:29:49.956626566-05:00"
+    dependencies:
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      tags:
+      - bitnami-common
+      version: 2.x.x
+    description: PostgreSQL (Postgres) is an open source object-relational database
+      known for reliability and data integrity. ACID-compliant, it supports foreign
+      keys, joins, views, triggers and stored procedures.
+    digest: 92b4035ddf61e38152dacb29d35525123cf0301bd0c73b5d65ca557876ffa2d7
+    home: https://bitnami.com
+    icon: https://dyltqmyl993wv.cloudfront.net/assets/stacks/postgresql/img/postgresql-stack-220x234.png
+    keywords:
+    - postgresql
+    - postgres
+    - database
+    - sql
+    - replication
+    - cluster
+    maintainers:
+    - name: Broadcom, Inc. All Rights Reserved.
+      url: https://github.com/bitnami/charts
+    name: postgresql
+    sources:
+    - https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+    urls:
+    - https://EstebanForero.github.io/parcial-1/charts/postgresql-16.7.26.tgz
+    version: 16.7.26
+generated: "2025-08-18T15:29:49.949024815-05:00"
