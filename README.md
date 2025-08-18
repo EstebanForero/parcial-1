@@ -15,21 +15,6 @@ These components are orchestrated using Kubernetes resources (Deployments, Servi
 
 <img width="807" height="666" alt="image" src="https://github.com/user-attachments/assets/5aebf619-8454-4d75-9649-a9af98a03635" />
 
-```
-+-------------------+       +-------------------+       +-------------------+
-| Ingress (NGINX)   |       |                   |       |                   |
-| - /api/* -> Backend |---->| Backend (Spring)  |<----->| PostgreSQL (Bitnami) |
-| - / -> Frontend   |       |                   |       |                   |
-+-------------------+       +-------------------+       +-------------------+
-          |                        |
-          |                        |
-          v                        v
-+-------------------+       +-------------------+
-| Frontend (React)  |       |                   |
-|                   |       |                   |
-+-------------------+       +-------------------+
-```
-
 ## Prerequisites
 
 - **Kubernetes Cluster**: A running Kubernetes cluster (e.g., Minikube, Kind, or a cloud provider).
