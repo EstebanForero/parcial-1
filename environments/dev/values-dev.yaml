@@ -5,7 +5,7 @@ backend:
     tag: "1.13.0"
 
   config:
-    db_host: pedido-app-prod-postgresql
+    db_host: pedido-app-dev-postgresql
     db_port: "5432"
 
   
