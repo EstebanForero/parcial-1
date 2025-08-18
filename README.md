@@ -12,6 +12,9 @@ The application consists of three main components:
 These components are orchestrated using Kubernetes resources (Deployments, Services, Ingress, ConfigMap, Secret, and PersistentVolumeClaim) defined in a Helm chart. An Ingress controller (NGINX) routes traffic to the appropriate services based on the URL path. ArgoCD ensures automatic synchronization of the cluster state with the Git repository.
 
 ### Architecture Diagram
+
+<img width="807" height="666" alt="image" src="https://github.com/user-attachments/assets/5aebf619-8454-4d75-9649-a9af98a03635" />
+
 ```
 +-------------------+       +-------------------+       +-------------------+
 | Ingress (NGINX)   |       |                   |       |                   |
