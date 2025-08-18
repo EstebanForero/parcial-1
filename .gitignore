@@ -1,0 +1,5 @@
+# Helm chart lock file
+Chart.lock
+
+# Local Helm cache (optional if you have scripts that generate charts locally)
+.helm/
