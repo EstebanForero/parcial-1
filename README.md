@@ -13,7 +13,10 @@ These components are orchestrated using Kubernetes resources (Deployments, Servi
 
 ### Architecture Diagram
 
-<img width="807" height="666" alt="image" src="https://github.com/user-attachments/assets/5aebf619-8454-4d75-9649-a9af98a03635" />
+<img width="786" height="642" alt="image" src="https://github.com/user-attachments/assets/6a00c574-55cf-44be-b8d8-936da18097c8" />
+
+<img width="634" height="731" alt="image" src="https://github.com/user-attachments/assets/c41ed2e7-7a26-491f-ad21-f1b8741561a5" />
+
 
 ## Prerequisites
 
