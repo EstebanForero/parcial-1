@@ -30,12 +30,12 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: http
+              port: {{ .Values.backend.service.port }}
             initialDelaySeconds: 1
             periodSeconds: 1
           readinessProbe:
             httpGet:
               path: /health
-              port: http
+              port: {{ .Values.backend.service.port }}
             initialDelaySeconds: 5
             periodSeconds: 5
