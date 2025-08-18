@@ -29,4 +29,4 @@ ingress:
   enabled: true
   className: "nginx"
   hosts:
-    - host: "prod.parcial-1.local"
+    - host: "prod.estebanmf.space"
