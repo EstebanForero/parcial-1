@@ -6,10 +6,10 @@ backend:
   resources:
     requests:
       cpu: "100m"
-      memory: "1Gi"
+      memory: "100Mi"
     limits:
-      cpu: "1000m"
-      memory: "2Gi"
+      cpu: "200m"
+      memory: "200Mi"
 
 frontend:
   replicaCount: 2
