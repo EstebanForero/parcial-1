@@ -18,14 +18,14 @@ spec:
       http:
         paths:
           - path: /api(/|$)(.*)
-            pathType: Prefix
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: {{ $.Values.backend.name }}-service
                 port:
                   number: {{ $.Values.backend.service.port }}
           - path: /()(.*)
-            pathType: Prefix
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: {{ $.Values.frontend.name }}-service
