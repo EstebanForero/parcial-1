@@ -1,6 +1,3 @@
-
-# my-app/values.yaml
-
 # Backend Configuration
 backend:
   name: backend-1
@@ -8,7 +5,7 @@ backend:
   image:
     repository: esteban1930/backend-1
     pullPolicy: IfNotPresent
-    tag: "" # overridden by CI/CD pipeline
+    tag: ""
 
   resources:
     requests:
@@ -36,12 +33,10 @@ backend:
     minReplicas: 1
     maxReplicas: 5
     targetCPUUtilizationPercentage: 80
+  
   config:
     port: "8080"
-    db_host: "my-app-postgresql"
     db_port: "5432"
-    db_user: "esteban"
-    db_name: "mydb"
 
 # Frontend Configuration
 frontend:
@@ -50,7 +45,7 @@ frontend:
   image:
     repository: esteban1930/frontend-1
     pullPolicy: IfNotPresent
-    tag: "" # overridden by CI/CD pipeline
+    tag: ""
 
   resources:
     requests:
@@ -72,7 +67,7 @@ frontend:
           - path: /
             pathType: ImplementationSpecific
   config:
-    vite_backend_url: "http://chart-example.local/api" # Ingress domain
+    vite_backend_url: "http://chart-example.local/api"
 
 # PostgreSQL Dependency Configuration
 postgresql:

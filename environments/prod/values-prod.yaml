@@ -3,10 +3,6 @@ backend:
   image:
     tag: "1.13.0" 
 
-  config:
-      db_host: pedido-app-prod-postgresql
-      db_port: "5432"
-  
   resources:
     requests:
       cpu: "100m"
