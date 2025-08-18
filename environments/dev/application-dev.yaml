@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pedido-app-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: 'https://github.com/EstebanForero/parcial-1'
+    targetRevision: HEAD
+    path: charts/pedido-app
+
+    helm:
+      valueFiles:
+        - ../../environments/dev/values-dev.yaml
+
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: pedido-app-dev
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

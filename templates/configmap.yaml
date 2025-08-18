@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.backend.name }}-configmap
+data:
+  PORT: {{ .Values.backend.config.port | quote }}
+  DB_HOST: {{ .Values.backend.config.db_host | quote }}
+  DB_PORT: {{ .Values.backend.config.db_port | quote }}
+  DB_USER: {{ .Values.postgresql.auth.username | quote }}
+  DB_NAME: {{ .Values.postgresql.auth.database | quote }}

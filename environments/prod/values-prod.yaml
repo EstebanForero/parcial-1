@@ -1,0 +1,20 @@
+backend:
+  replicaCount: 3 
+  image:
+    tag: "v1.2.0" 
+  
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+
+frontend:
+  replicaCount: 2
+
+postgresql:
+  primary:
+    persistence:
+      size: "10Gi" # Más espacio para prod
