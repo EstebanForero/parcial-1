@@ -1,7 +1,7 @@
 backend:
   replicaCount: 3 
   image:
-    tag: "7" 
+    tag: "1.13.0" 
   
   resources:
     requests:
@@ -13,7 +13,7 @@ backend:
 
 frontend:
   image:
-    tag: "1"
+    tag: "1.2.0"
   replicaCount: 2
 
 postgresql:
