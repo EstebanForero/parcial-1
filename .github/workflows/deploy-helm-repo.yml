@@ -15,7 +15,6 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -29,10 +28,16 @@ jobs:
         with:
           version: v3.14.0
 
+      # --- SECCIÓN MODIFICADA ---
       - name: Build Helm Artifacts
         run: |
-          mkdir dist
+          # 1. Elimina el directorio 'dist' si existe, para asegurar un inicio limpio
+          rm -rf ./dist
+          # 2. Vuelve a crear el directorio 'dist'
+          mkdir ./dist
+          # 3. Empaqueta el chart en el directorio limpio
           helm package . --destination ./dist
+          # 4. Indexa el contenido del directorio
           helm repo index ./dist --url https://EstebanForero.github.io/parcial-1
 
       - name: Upload GitHub Pages artifact
@@ -40,7 +45,8 @@ jobs:
         with:
           path: ./dist
 
-
       - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
         id: deployment
         uses: actions/deploy-pages@v4
