@@ -106,9 +106,25 @@ kubectl get ingress -n pedido-app-dev
 kubectl get ingress -n pedido-app-prod
 ```
 
-## ArgoCD Configuration
+## ArgoCD Integration
 
-ArgoCD is used for continuous deployment, automatically synchronizing the cluster with the Git repository (`https://github.com/EstebanForero/parcial-1`).
+ArgoCD is used for continuous deployment, automatically synchronizing the cluster with the Git repository (`https://github.com/EstebanForero/parcial-1`). It has been installed in the `argocd` namespace and is active (e.g., `argocd Active 3h36m`).
+
+### Installation of ArgoCD (if necessary)
+If ArgoCD is not already installed, deploy it using the official Helm chart:
+
+```bash
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+helm install argocd argo/argo-cd --namespace argocd --create-namespace
+```
+
+Access the ArgoCD UI by port-forwarding:
+```bash
+kubectl port-forward svc/argocd-server -n argocd 8080:80
+```
+
+Log in with the default admin password (retrieve it with `kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d`).
 
 ### Step 1: Apply ArgoCD Application Definitions
 Apply the ArgoCD `Application` resources for both environments:
@@ -142,6 +158,33 @@ To demonstrate automatic synchronization:
    kubectl get pods -n pedido-app-dev
    ```
 
+## Installing the Ingress Controller
+
+An NGINX Ingress controller is required to handle Ingress resources. It is installed externally rather than as a dependency in the Helm chart, which is a better practice for the following reasons:
+- **Separation of Concerns**: Keeping the Ingress controller as a separate component avoids coupling it with the application chart, making the chart more portable and reusable.
+- **Cluster Management**: The Ingress controller is a cluster-wide resource, best managed independently to ensure it serves multiple applications consistently.
+- **Customization**: External installation allows for tailored configuration (e.g., `LoadBalancer` service type) without altering the application chart.
+
+### Installation Steps
+Add the Ingress NGINX Helm repository and install the controller:
+
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --create-namespace \
+  --set controller.service.type=LoadBalancer
+```
+
+Verify the installation:
+```bash
+kubectl get pods -n ingress-nginx
+kubectl get svc -n ingress-nginx
+```
+
+Note the external IP of the `ingress-nginx-controller` service and configure your DNS (e.g., `/etc/hosts`) to map `dev.parcial-1.local` and `prod.parcial-1.local` to this IP for local testing.
+
 ## Accessing the Application
 
 ### Dev Environment
@@ -150,44 +193,24 @@ To demonstrate automatic synchronization:
 - **Namespace**: `pedido-app-dev`
 
 ### Prod Environment
-- **Frontend**: `https://prod.estebanmf.space/`
-- **Backend API**: `https://prod.estebanmf.space/api`
+- **Frontend**: `http://prod.parcial-1.local/` (updated from `prod.estebanmf.space` to match your provided `values-prod.yaml`)
+- **Backend API**: `http://prod.parcial-1.local/api`
 - **Namespace**: `pedido-app-prod`
 
 **Note**: Ensure the Ingress controller is properly configured and the domain names resolve to the controller’s IP. For local testing, update your `/etc/hosts` file or equivalent:
 ```
 <INGRESS_IP> dev.parcial-1.local
-<INGRESS_IP> prod.estebanmf.space
+<INGRESS_IP> prod.parcial-1.local
 ```
 
 ## Configuration Details
 
-### Helm Chart
-- **Chart Name**: `parcial-1`
-- **Version**: `0.1.0`
-- **App Version**: `1.0.0`
-- **Dependencies**: Bitnami PostgreSQL (`16.7.26`)
-- **Templates**:
-  - `backend-deployment.yaml`: Deploys the Spring Boot backend.
-  - `backend-service.yaml`: Exposes the backend via `ClusterIP`.
-  - `backend-hpa.yaml`: Autoscales the backend based on CPU usage (min: 1, max: 5, target: 80%).
-  - `frontend-deployment.yaml`: Deploys the React frontend.
-  - `frontend-service.yaml`: Exposes the frontend via `ClusterIP`.
-  - `ingress.yaml`: Routes traffic to backend (`/api/*`) and frontend (`/`).
-  - `configmap.yaml`: Stores non-sensitive backend configurations (e.g., DB host, port).
-  - `secret.yaml`: Stores the PostgreSQL password securely.
-
 ### Environment-Specific Configurations
-- **Dev (`values-dev.yaml`)**:
-  - Backend: 1 replica, `100m CPU`/`256Mi memory` requests, `500m CPU`/`512Mi memory` limits, image tag `1.13.0`.
-  - Frontend: 1 replica, image tag `1.2.0`.
-  - PostgreSQL: 2Gi persistence.
-  - Ingress: `dev.parcial-1.local`.
 - **Prod (`values-prod.yaml`)**:
   - Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits, image tag `1.13.0`.
-  - Frontend: 2 replicas, image tag `1.2.0`, `VITE_BACKEND_URL: https://prod.estebanmf.space/api`.
+  - Frontend: 2 replicas, image tag `1.2.0`, `VITE_BACKEND_URL: https://prod.parcial-1.local/api`.
   - PostgreSQL: 10Gi persistence.
-  - Ingress: `prod.estebanmf.space`.
+  - Ingress: `prod.parcial-1.local` (updated to match your provided file).
 
 ### Good Practices
 - **Resource Management**: CPU and memory `requests` and `limits` are defined for both backend and frontend, tailored per environment.
