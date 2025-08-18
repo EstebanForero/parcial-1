@@ -11,12 +11,20 @@ The application consists of three main components:
 
 These components are orchestrated using Kubernetes resources (Deployments, Services, Ingress, ConfigMap, Secret, and PersistentVolumeClaim) defined in a Helm chart. An Ingress controller (NGINX) routes traffic to the appropriate services based on the URL path. ArgoCD ensures automatic synchronization of the cluster state with the Git repository.
 
+### Key Features Implemented
+- Health Checks: Liveness and readiness probes implemented for both frontend and backend
+- Horizontal Pod Autoscaler (HPA): Automatic scaling for backend based on CPU utilization
+- Resource Management: CPU and memory limits/requests configured for all components
+- Data Persistence: PostgreSQL with persistent volumes
+- Security: Database credentials managed via Kubernetes Secrets
+- GitOps: ArgoCD automated synchronization
+- Multi-environment: Separate dev and prod configurations
+
 ### Architecture Diagram
 
 <img width="786" height="642" alt="image" src="https://github.com/user-attachments/assets/6a00c574-55cf-44be-b8d8-936da18097c8" />
 
 <img width="634" height="731" alt="image" src="https://github.com/user-attachments/assets/c41ed2e7-7a26-491f-ad21-f1b8741561a5" />
-
 
 ## Prerequisites
 
@@ -25,33 +33,33 @@ These components are orchestrated using Kubernetes resources (Deployments, Servi
 - **ArgoCD**: Installed in the cluster with access to the `argocd` namespace.
 - **NGINX Ingress Controller**: Deployed in the cluster to handle Ingress resources.
 - **Git**: Access to this repository (`https://github.com/EstebanForero/parcial-1`).
-- **DNS Configuration** (optional for local testing): Configure `dev.parcial-1.local` (dev) and `prod.estebanmf.space` (prod) to resolve to the Ingress controller’s IP.
+- **DNS Configuration** (optional for local testing): Configure `dev.parcial-1.local` (dev) for local access.
 
 ## Repository Structure
 
 ```
 parcial-1/
-├── charts/
-│   └── pedido-app/
-│       ├── Chart.yaml              # Helm chart metadata
-│       ├── values.yaml             # Default values
-│       ├── environments/
-│       │   ├── dev/
-│       │   │   ├── application-dev.yaml  # ArgoCD Application for dev
-│       │   │   ├── values-dev.yaml      # Dev-specific values
-│       │   ├── prod/
-│       │   │   ├── application-prod.yaml # ArgoCD Application for prod
-│       │   │   ├── values-prod.yaml     # Prod-specific values
-│       ├── templates/
-│       │   ├── backend-deployment.yaml  # Backend Deployment
-│       │   ├── backend-service.yaml     # Backend Service
-│       │   ├── backend-hpa.yaml         # Backend HorizontalPodAutoscaler
-│       │   ├── frontend-deployment.yaml # Frontend Deployment
-│       │   ├── frontend-service.yaml    # Frontend Service
-│       │   ├── ingress.yaml             # Ingress for routing
-│       │   ├── configmap.yaml          # Backend configuration
-│       │   ├── secret.yaml             # Database credentials
-├── README.md                           # This file
+├── Chart.yaml                      # Helm chart metadata
+├── values.yaml                     # Default values
+├── environments/
+│   ├── dev/
+│   │   ├── application-dev.yaml    # ArgoCD Application for dev
+│   │   └── values-dev.yaml         # Dev-specific values
+│   └── prod/
+│       ├── application-prod.yaml   # ArgoCD Application for prod
+│       └── values-prod.yaml        # Prod-specific values
+├── templates/
+│   ├── backend-deployment.yaml     # Backend Deployment with health checks
+│   ├── backend-service.yaml        # Backend Service
+│   ├── backend-hpa.yaml           # Backend HorizontalPodAutoscaler
+│   ├── frontend-deployment.yaml   # Frontend Deployment with health checks
+│   ├── frontend-service.yaml      # Frontend Service
+│   ├── ingress.yaml               # Ingress for routing
+│   ├── configmap.yaml             # Backend configuration (auto DB host)
+│   └── secret.yaml                # Database credentials
+├── .github/workflows/
+│   └── deploy-helm-repo.yml       # GitHub Actions for Helm repo
+└── README.md                      # This file
 ```
 
 ## Installation with Helm (Manual)
@@ -77,7 +85,7 @@ Deploy the application to the `pedido-app-dev` namespace:
 
 ```bash
 helm install pedido-app-dev esteban-charts/parcial-1 \
-  -f charts/pedido-app/environments/dev/values-dev.yaml \
+  -f environments/dev/values-dev.yaml \
   --namespace pedido-app-dev \
   --create-namespace
 ```
@@ -87,7 +95,7 @@ Deploy the application to the `pedido-app-prod` namespace:
 
 ```bash
 helm install pedido-app-prod esteban-charts/parcial-1 \
-  -f charts/pedido-app/environments/prod/values-prod.yaml \
+  -f environments/prod/values-prod.yaml \
   --namespace pedido-app-prod \
   --create-namespace
 ```
@@ -104,6 +112,12 @@ Verify the Ingress resources:
 ```bash
 kubectl get ingress -n pedido-app-dev
 kubectl get ingress -n pedido-app-prod
+```
+
+Check HPA status:
+```bash
+kubectl get hpa -n pedido-app-dev
+kubectl get hpa -n pedido-app-prod
 ```
 
 ## ArgoCD Integration
@@ -130,8 +144,8 @@ Log in with the default admin password (retrieve it with `kubectl get secret arg
 Apply the ArgoCD `Application` resources for both environments:
 
 ```bash
-kubectl apply -f charts/pedido-app/environments/dev/application-dev.yaml -n argocd
-kubectl apply -f charts/pedido-app/environments/prod/application-prod.yaml -n argocd
+kubectl apply -f environments/dev/application-dev.yaml -n argocd
+kubectl apply -f environments/prod/application-prod.yaml -n argocd
 ```
 
 ### Step 2: Verify ArgoCD Synchronization
@@ -146,7 +160,7 @@ The `syncPolicy.automated` settings (`prune: true`, `selfHeal: true`) ensure tha
 
 ### Step 3: Demonstrate GitOps
 To demonstrate automatic synchronization:
-1. Update a value in the Git repository, e.g., change `backend.image.tag` in `charts/pedido-app/environments/dev/values-dev.yaml` from `"1.13.0"` to `"1.14.0"`.
+1. Update a value in the Git repository, e.g., change `backend.image.tag` in `environments/dev/values-dev.yaml` from `"1.15.0"` to `"1.16.0"`.
 2. Commit and push the change:
    ```bash
    git commit -m "Update backend image tag for dev"
@@ -157,6 +171,26 @@ To demonstrate automatic synchronization:
    argocd app sync pedido-app-dev
    kubectl get pods -n pedido-app-dev
    ```
+
+## DNS Configuration
+
+### Production Domain Setup
+The production environment uses an external DNS service to provide the domain `prod.estebanmf.space`. This was configured using a DNS provider (such as Cloudflare, Route53, or similar) by creating an **A record** that points to the Ingress controller's external IP address.
+
+**Setting up your own domain:**
+1. Purchase a domain from any DNS provider (Namecheap, GoDaddy, Cloudflare, etc.)
+2. Get your Ingress controller's external IP: `kubectl get svc -n ingress-nginx ingress-nginx-controller`
+3. Create an A record in your DNS provider:
+   - **Name**: `prod` (or your preferred subdomain)
+   - **Type**: `A`
+   - **Value**: `<INGRESS_EXTERNAL_IP>`
+   - **TTL**: `300` (or auto)
+
+### Local Development Setup
+For local testing with the dev environment, add the following to your `/etc/hosts` file:
+```
+<INGRESS_IP> dev.parcial-1.local
+```
 
 ## Installing the Ingress Controller
 
@@ -183,7 +217,7 @@ kubectl get pods -n ingress-nginx
 kubectl get svc -n ingress-nginx
 ```
 
-Note the external IP of the `ingress-nginx-controller` service and configure your DNS (e.g., `/etc/hosts`) to map `dev.parcial-1.local` and `prod.parcial-1.local` to this IP for local testing.
+Note the external IP of the `ingress-nginx-controller` service for DNS configuration.
 
 ## Accessing the Application
 
@@ -192,40 +226,124 @@ Note the external IP of the `ingress-nginx-controller` service and configure you
 - **Backend API**: `http://dev.parcial-1.local/api`
 - **Namespace**: `pedido-app-dev`
 
-### Prod Environment
-- **Frontend**: `http://prod.parcial-1.local/` (updated from `prod.estebanmf.space` to match your provided `values-prod.yaml`)
-- **Backend API**: `http://prod.parcial-1.local/api`
+### Prod Environment  
+- **Frontend**: `https://prod.estebanmf.space/`
+- **Backend API**: `https://prod.estebanmf.space/api`
 - **Namespace**: `pedido-app-prod`
 
-**Note**: Ensure the Ingress controller is properly configured and the domain names resolve to the controller’s IP. For local testing, update your `/etc/hosts` file or equivalent:
-```
-<INGRESS_IP> dev.parcial-1.local
-<INGRESS_IP> prod.parcial-1.local
-```
+**Note**: The production environment uses HTTPS and is accessible via the configured external domain.
 
 ## Configuration Details
 
-### Environment-Specific Configurations
-- **Prod (`values-prod.yaml`)**:
-  - Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits, image tag `1.13.0`.
-  - Frontend: 2 replicas, image tag `1.2.0`, `VITE_BACKEND_URL: https://prod.parcial-1.local/api`.
-  - PostgreSQL: 10Gi persistence.
-  - Ingress: `prod.parcial-1.local` (updated to match your provided file).
+### Health Checks Implementation
+Both frontend and backend deployments include comprehensive health checks:
 
-### Good Practices
-- **Resource Management**: CPU and memory `requests` and `limits` are defined for both backend and frontend, tailored per environment.
-- **Security**: Database credentials are stored in a Kubernetes `Secret`.
-- **Persistence**: PostgreSQL uses a `PersistentVolumeClaim` to ensure data persistence.
-- **Modularity**: The Helm chart is parameterized, with separate `values.yaml` files for dev and prod.
-- **Autoscaling**: The backend includes a HorizontalPodAutoscaler (`backend-hpa.yaml`).
-- **GitOps**: ArgoCD automates deployment and synchronization, ensuring changes in Git are reflected in the cluster.
+**Backend Health Checks:**
+- **Liveness Probe**: Checks `/health` endpoint every 1 second after 1-second delay
+- **Readiness Probe**: Checks `/health` endpoint every 5 seconds after 5-second delay
+- **Port**: Uses the service port directly for reliable connectivity
+
+**Frontend Health Checks:**
+- **Liveness Probe**: Checks `/` endpoint every 3 seconds after 3-second delay  
+- **Readiness Probe**: Checks `/` endpoint every 5 seconds after 3-second delay
+- **Port**: Uses the service port directly for reliable connectivity
+
+### Horizontal Pod Autoscaler (HPA)
+The backend includes an HPA configuration for automatic scaling:
+- **Enabled**: Controlled via `backend.autoscaling.enabled` in values files
+- **Scaling Metrics**: CPU utilization percentage (configurable per environment)
+- **Min/Max Replicas**: Configurable per environment (dev: 1-5, prod: 1-10)
+
+### Environment-Specific Configurations
+
+**Dev Environment (`values-dev.yaml`)**:
+- Backend: 1 replica, `50m CPU`/`256Mi memory` requests, `100m CPU`/`512Mi memory` limits, image tag `1.15.0`
+- Frontend: 1 replica, image tag `1.2.0`
+- PostgreSQL: 2Gi persistence
+- Ingress: `dev.parcial-1.local`
+
+**Prod Environment (`values-prod.yaml`)**:
+- Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits, image tag `1.13.0`
+- Frontend: 2 replicas, image tag `1.2.0`, `VITE_BACKEND_URL: https://prod.estebanmf.space/api`
+- PostgreSQL: 10Gi persistence  
+- Ingress: `prod.estebanmf.space`
+
+### Automated Database Host Configuration
+The database hostname is automatically generated using `{{ .Release.Name }}-postgresql`, eliminating the need to manually specify database hosts in environment configurations. This ensures:
+- **Consistency**: Database hostnames always follow Helm conventions
+- **Reduced Errors**: No risk of typos in manual configuration
+- **Environment Flexibility**: Works seamlessly across dev/prod without changes
+
+### Security Best Practices
+- **Secrets Management**: Database credentials stored in Kubernetes `Secret` objects
+- **Resource Limits**: All containers have defined CPU and memory limits
+- **Non-root Execution**: Containers run with appropriate security contexts
+- **Network Policies**: Ingress rules properly configured for service isolation
 
 ## Troubleshooting
 
-- **Pods not starting**: Check pod logs with `kubectl logs <pod-name> -n <namespace>`.
-- **Ingress not working**: Ensure the NGINX Ingress controller is running and the domain resolves correctly (`kubectl get ingress -n <namespace>`).
-- **ArgoCD sync issues**: Verify the repository URL and credentials in `application-dev.yaml`/`application-prod.yaml`. Check ArgoCD logs: `kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server`.
-- **Helm installation errors**: Ensure the Bitnami repository is added (`helm repo add bitnami https://charts.bitnami.com/bitnami`) and the chart version matches (`16.7.26`).
+### Common Issues
+
+**Pods not starting:**
+```bash
+kubectl logs <pod-name> -n <namespace>
+kubectl describe pod <pod-name> -n <namespace>
+```
+
+**Health check failures:**
+```bash
+# Check if the health endpoints are accessible
+kubectl exec -it <pod-name> -n <namespace> -- curl localhost:8080/health  # Backend
+kubectl exec -it <pod-name> -n <namespace> -- curl localhost:80/         # Frontend
+```
+
+**Ingress not working:**
+```bash
+kubectl get ingress -n <namespace>
+kubectl describe ingress <ingress-name> -n <namespace>
+# Ensure NGINX controller is running
+kubectl get pods -n ingress-nginx
+```
+
+**ArgoCD sync issues:**
+```bash
+# Check ArgoCD application status
+kubectl get applications -n argocd
+# Check ArgoCD logs
+kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server
+```
+
+**HPA not scaling:**
+```bash
+kubectl get hpa -n <namespace>
+kubectl describe hpa <hpa-name> -n <namespace>
+# Check metrics server is installed
+kubectl get pods -n kube-system | grep metrics-server
+```
+
+**DNS Resolution Issues:**
+- Verify external IP: `kubectl get svc -n ingress-nginx`
+- Check DNS propagation: `nslookup prod.estebanmf.space`
+- For local testing, verify `/etc/hosts` entries
+
+## Additional Resources
+
+- [Helm Documentation](https://helm.sh/docs/)
+- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
+- [Kubernetes Ingress Documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+- [NGINX Ingress Controller](https://kubernetes.github.io/ingress-nginx/)
+
+## Assignment Compliance
+
+This project fulfills all requirements for "Parcial I - Patrones arquitectónicos avanzados":
+
+- **Chart Structure**: Modular Helm chart with PostgreSQL dependency
+- **Required Resources**: Deployment, Service, Ingress, PVC, ConfigMap, Secret
+- **ArgoCD Integration**: Automated GitOps with dev/prod environments  
+- **End-to-End Functionality**: Complete application stack with persistence
+- **HPA Implementation**: Backend autoscaling based on CPU utilization
+- **Best Practices**: Resource limits, security, official chart reuse
+- **Documentation**: Comprehensive README with installation instructions
 
 ## License
 This project is for academic purposes as part of the "Patrones arquitectónicos avanzados" course. No specific license is applied.
