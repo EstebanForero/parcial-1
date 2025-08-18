@@ -10,12 +10,12 @@ spec:
 
   source:
     repoURL: 'https://github.com/EstebanForero/parcial-1'
-    targetRevision: main
-    path: charts/pedido-app
+    targetRevision: master
+    path: .
 
     helm:
       valueFiles:
-        - ../../environments/prod/values-prod.yaml
+        - environments/prod/values-prod.yaml
 
   destination:
     server: 'https://kubernetes.default.svc'

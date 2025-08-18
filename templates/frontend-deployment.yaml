@@ -21,5 +21,6 @@ spec:
           env:
             - name: VITE_BACKEND_URL
               value: {{ .Values.frontend.config.vite_backend_url | quote }}
+
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+              {{- toYaml .Values.frontend.resources | nindent 12 }}
