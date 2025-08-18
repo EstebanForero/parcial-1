@@ -18,3 +18,9 @@ postgresql:
   primary:
     persistence:
       size: "10Gi" # Más espacio para prod
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: "prod.parcial-1.local"

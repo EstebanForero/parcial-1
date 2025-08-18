@@ -19,3 +19,9 @@ postgresql:
   primary:
     persistence:
       size: "2Gi"
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: "dev.parcial-1.local"
