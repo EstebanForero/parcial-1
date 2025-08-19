@@ -1,7 +1,7 @@
 backend:
   replicaCount: 3 
-  image:
-    tag: "1.13.0" 
+  # image:
+  #   tag: "1.13.0" 
 
   resources:
     requests:
@@ -12,8 +12,8 @@ backend:
       memory: "200Mi"
 
 frontend:
-  image:
-    tag: "1.2.0"
+  # image:
+  #   tag: "1.2.0"
 
   config:
     vite_backend_url: https://prod.estebanmf.space/api
