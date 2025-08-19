@@ -5,7 +5,7 @@ backend:
   image:
     repository: esteban1930/backend-1
     pullPolicy: IfNotPresent
-    tag: ""
+    tag: "1.31.0"
 
   resources:
     requests:
