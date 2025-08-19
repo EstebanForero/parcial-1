@@ -96,6 +96,12 @@ This entire process is fully automated, ensuring that only tested and verified c
 
 <img width="1170" height="417" alt="image" src="https://github.com/user-attachments/assets/5cd1fe55-26d2-49ea-9b94-32e36545f44a" />
 
+### Working demo
+
+<img width="804" height="453" alt="image" src="https://github.com/user-attachments/assets/38ba8e21-aa25-4e95-8646-334d8f3713ed" />
+
+[demo_page](https://prod.estebanmf.space/)
+
 ## Installation with Helm (Manual)
 
 ### Step 1: Add the Helm Repository
@@ -289,19 +295,19 @@ Both frontend and backend deployments include comprehensive health checks:
 ### Horizontal Pod Autoscaler (HPA)
 The backend includes an HPA configuration for automatic scaling:
 - **Enabled**: Controlled via `backend.autoscaling.enabled` in values files
-- **Scaling Metrics**: CPU utilization percentage (configurable per environment)
+- **Scaling Metrics**: CPU utilization percentage (configurable per environment, default is 80%)
 - **Min/Max Replicas**: Configurable per environment (dev: 1-5, prod: 1-10)
 
 ### Environment-Specific Configurations
 
 **Dev Environment (`values-dev.yaml`)**:
-- Backend: 1 replica, `50m CPU`/`256Mi memory` requests, `100m CPU`/`512Mi memory` limits, image tag `1.15.0`
+- Backend: 1 replica, `50m CPU`/`256Mi memory` requests, `100m CPU`/`512Mi memory` limits, image tag `latest`
 - Frontend: 1 replica, image tag `1.2.0`
 - PostgreSQL: 2Gi persistence
 - Ingress: `dev.parcial-1.local`
 
 **Prod Environment (`values-prod.yaml`)**:
-- Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits, image tag `1.13.0`
+- Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits, image tag `latest`
 - Frontend: 2 replicas, image tag `1.2.0`, `VITE_BACKEND_URL: https://prod.estebanmf.space/api`
 - PostgreSQL: 10Gi persistence  
 - Ingress: `prod.estebanmf.space`
