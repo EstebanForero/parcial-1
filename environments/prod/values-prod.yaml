@@ -25,6 +25,11 @@ postgresql:
     persistence:
       size: "10Gi" # Más espacio para prod
 
+  auth:
+    database: mydb
+    existingSecret: production-v1-secret
+    username: esteban
+
 ingress:
   enabled: true
   className: "nginx"
