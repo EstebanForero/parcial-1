@@ -197,7 +197,7 @@ helm search repo esteban-charts
     
     ```bash
     helm install pedido-app-prod esteban-charts/parcial-1 \
-      --namespace pedido-app-prod \
+      --namespace pedido-app-test \
       --create-namespace
     ```
 
