@@ -30,6 +30,9 @@ ingress:
   className: "nginx"
   hosts:
     - host: "prod.estebanmf.space"
+      paths:
+        backend: /api
+        frontend: /
 
 ingress-nginx:
   enabled: false
