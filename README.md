@@ -1,4 +1,4 @@
-# Pedido Application Helm Chart
+# Application Helm Chart for advanced architectural patterns
 
 This repository contains a Helm chart (`parcial-1`) for deploying a pedido management system with a PostgreSQL database, a Rust backend, and a React frontend. The deployment is managed using Helm for packaging and ArgoCD for continuous delivery across two environments: `dev` (`pedido-app-dev`) and `prod` (`pedido-app-prod`). This project fulfills the requirements for the "Parcial I - Patrones arquitectónicos avanzados" assignment.
 
@@ -6,7 +6,7 @@ This repository contains a Helm chart (`parcial-1`) for deploying a pedido manag
 
 The application consists of three main components:
 - **PostgreSQL**: A database for storing pedido data, deployed using the Bitnami PostgreSQL chart.
-- **Backend**: A Java Spring Boot API, exposed via a `ClusterIP` service and accessible at `/api/*`.
+- **Backend**: A Rust Axum API, exposed via a `ClusterIP` service and accessible at `/api/*`.
 - **Frontend**: A React application, exposed via a `ClusterIP` service and accessible at `/`.
 
 These components are orchestrated using Kubernetes resources (Deployments, Services, Ingress, ConfigMap, Secret, and PersistentVolumeClaim) defined in a Helm chart. An Ingress controller (NGINX) routes traffic to the appropriate services based on the URL path. ArgoCD ensures automatic synchronization of the cluster state with the Git repository.
@@ -61,6 +61,46 @@ parcial-1/
 │   └── deploy-helm-repo.yml       # GitHub Actions for Helm repo
 └── README.md                      # This file
 ```
+
+## Published Helm Chart
+
+The Helm chart is publicly available on Artifact Hub, making it easy to search for and consume.
+
+- **Artifact Hub Package**: [https://artifacthub.io/packages/helm/parcial-1-chart/parcial-1](https://artifacthub.io/packages/helm/parcial-1-chart/parcial-1)
+
+## CI/CD Automation with Jenkins
+
+This project implements a full CI/CD pipeline using Jenkins to automate the build, testing, and deployment of the backend and frontend applications. This pipeline connects the application source code repositories to the Helm deployment repository, enabling rapid and reliable releases.
+
+### CI/CD Flow
+
+The automation follows these key steps:
+
+1.  **Trigger**: A developer pushes a code change to the frontend or backend application's Git repository.
+2.  **CI Phase (Jenkins)**:
+    *   Jenkins checks out the source code.
+    *   It compiles the application and runs automated tests (for the backend).
+    *   If the build and tests succeed, Jenkins builds a new Docker image, tagging it with a unique version based on the build number (e.g., `1.${BUILD_NUMBER}.0`).
+    *   The newly created image is pushed to a container registry (Docker Hub).
+3.  **CD Phase (Jenkins & ArgoCD)**:
+    *   After a successful image push, the Jenkins pipeline automatically clones this Helm chart repository (`parcial-1`).
+    *   It modifies the main `values.yaml` file, updating the `image.tag` for the corresponding component (backend or frontend) to the new version.
+    *   Jenkins commits and pushes this change back to the Helm chart repository.
+4.  **GitOps Synchronization (ArgoCD)**:
+    *   ArgoCD, which is continuously monitoring the Helm chart repository, detects the new commit.
+    *   It automatically synchronizes the cluster state, triggering a rolling update in the corresponding environment to deploy the new Docker image.
+
+This entire process is fully automated, ensuring that only tested and verified code is deployed, and manual intervention is minimized.
+
+### CI/CD Diagram
+
+<img width="1170" height="417" alt="image" src="https://github.com/user-attachments/assets/5cd1fe55-26d2-49ea-9b94-32e36545f44a" />
+
+### Working demo
+
+<img width="804" height="453" alt="image" src="https://github.com/user-attachments/assets/38ba8e21-aa25-4e95-8646-334d8f3713ed" />
+
+<a href="https://prod.estebanmf.space/" target="_blank" rel="noopener noreferrer">demo_page</a>
 
 ## Installation with Helm (Manual)
 
@@ -159,18 +199,22 @@ argocd app get pedido-app-prod
 The `syncPolicy.automated` settings (`prune: true`, `selfHeal: true`) ensure that any changes to the Git repository (e.g., updating `values-dev.yaml` or `values-prod.yaml`) are automatically applied to the cluster.
 
 ### Step 3: Demonstrate GitOps
-To demonstrate automatic synchronization:
-1. Update a value in the Git repository, e.g., change `backend.image.tag` in `environments/dev/values-dev.yaml` from `"1.15.0"` to `"1.16.0"`.
+To demonstrate automatic synchronization, you can manually update a value in the Git repository. For example, changing a replica count in `values-dev.yaml`.
+
+**Note**: The process of updating the application's `image.tag` is fully automated by our Jenkins CI/CD pipeline. When a new version of the frontend or backend is built, Jenkins automatically updates the `tag` in the main `values.yaml` file and pushes the change, which ArgoCD then deploys.
+
+To manually test the GitOps flow:
+1. Update a value in the Git repository, e.g., change `frontend.replicaCount` in `environments/dev/values-dev.yaml` from `1` to `2`.
 2. Commit and push the change:
    ```bash
-   git commit -m "Update backend image tag for dev"
+   git commit -m "Test GitOps: Scale frontend replicas for dev"
    git push origin master
    ```
-3. ArgoCD will detect the change and update the `pedido-app-dev` namespace automatically. Verify in the ArgoCD UI or with:
-   ```bash
-   argocd app sync pedido-app-dev
-   kubectl get pods -n pedido-app-dev
-   ```
+3. ArgoCD will detect the change and update the pedido-app-dev namespace automatically. Verify in the ArgoCD UI or with:
+  ``` bash
+  argocd app sync pedido-app-dev
+  kubectl get pods -n pedido-app-dev
+  ```
 
 ## DNS Configuration
 
@@ -251,19 +295,19 @@ Both frontend and backend deployments include comprehensive health checks:
 ### Horizontal Pod Autoscaler (HPA)
 The backend includes an HPA configuration for automatic scaling:
 - **Enabled**: Controlled via `backend.autoscaling.enabled` in values files
-- **Scaling Metrics**: CPU utilization percentage (configurable per environment)
+- **Scaling Metrics**: CPU utilization percentage (configurable per environment, default is 80%)
 - **Min/Max Replicas**: Configurable per environment (dev: 1-5, prod: 1-10)
 
 ### Environment-Specific Configurations
 
 **Dev Environment (`values-dev.yaml`)**:
-- Backend: 1 replica, `50m CPU`/`256Mi memory` requests, `100m CPU`/`512Mi memory` limits, image tag `1.15.0`
+- Backend: 1 replica, `50m CPU`/`256Mi memory` requests, `100m CPU`/`512Mi memory` limits, image tag `latest`
 - Frontend: 1 replica, image tag `1.2.0`
 - PostgreSQL: 2Gi persistence
 - Ingress: `dev.parcial-1.local`
 
 **Prod Environment (`values-prod.yaml`)**:
-- Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits, image tag `1.13.0`
+- Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits, image tag `latest`
 - Frontend: 2 replicas, image tag `1.2.0`, `VITE_BACKEND_URL: https://prod.estebanmf.space/api`
 - PostgreSQL: 10Gi persistence  
 - Ingress: `prod.estebanmf.space`
@@ -280,70 +324,14 @@ The database hostname is automatically generated using `{{ .Release.Name }}-post
 - **Non-root Execution**: Containers run with appropriate security contexts
 - **Network Policies**: Ingress rules properly configured for service isolation
 
-## Troubleshooting
-
-### Common Issues
-
-**Pods not starting:**
-```bash
-kubectl logs <pod-name> -n <namespace>
-kubectl describe pod <pod-name> -n <namespace>
-```
-
-**Health check failures:**
-```bash
-# Check if the health endpoints are accessible
-kubectl exec -it <pod-name> -n <namespace> -- curl localhost:8080/health  # Backend
-kubectl exec -it <pod-name> -n <namespace> -- curl localhost:80/         # Frontend
-```
-
-**Ingress not working:**
-```bash
-kubectl get ingress -n <namespace>
-kubectl describe ingress <ingress-name> -n <namespace>
-# Ensure NGINX controller is running
-kubectl get pods -n ingress-nginx
-```
-
-**ArgoCD sync issues:**
-```bash
-# Check ArgoCD application status
-kubectl get applications -n argocd
-# Check ArgoCD logs
-kubectl logs -n argocd -l app.kubernetes.io/name=argocd-server
-```
-
-**HPA not scaling:**
-```bash
-kubectl get hpa -n <namespace>
-kubectl describe hpa <hpa-name> -n <namespace>
-# Check metrics server is installed
-kubectl get pods -n kube-system | grep metrics-server
-```
-
 **DNS Resolution Issues:**
 - Verify external IP: `kubectl get svc -n ingress-nginx`
 - Check DNS propagation: `nslookup prod.estebanmf.space`
 - For local testing, verify `/etc/hosts` entries
 
-## Additional Resources
+## Additional Resources and sources
 
 - [Helm Documentation](https://helm.sh/docs/)
 - [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
 - [Kubernetes Ingress Documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/)
 - [NGINX Ingress Controller](https://kubernetes.github.io/ingress-nginx/)
-
-## Assignment Compliance
-
-This project fulfills all requirements for "Parcial I - Patrones arquitectónicos avanzados":
-
-- **Chart Structure**: Modular Helm chart with PostgreSQL dependency
-- **Required Resources**: Deployment, Service, Ingress, PVC, ConfigMap, Secret
-- **ArgoCD Integration**: Automated GitOps with dev/prod environments  
-- **End-to-End Functionality**: Complete application stack with persistence
-- **HPA Implementation**: Backend autoscaling based on CPU utilization
-- **Best Practices**: Resource limits, security, official chart reuse
-- **Documentation**: Comprehensive README with installation instructions
-
-## License
-This project is for academic purposes as part of the "Patrones arquitectónicos avanzados" course. No specific license is applied.
