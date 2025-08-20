@@ -20,10 +20,10 @@ postgresql:
   primary:
     persistence:
       size: "2Gi"
-  auth:
-    database: mydb
-    existingSecret: "development-v1-secret"
-    username: esteban
+  # auth:
+  #   database: mydb
+  #   username: esteban
+  #   existingSecret: "development-v1-secret"
 
 ingress:
   enabled: true
