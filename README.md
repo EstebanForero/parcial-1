@@ -41,6 +41,22 @@ For production and other secure environments, the chart is designed to use a pre
       --from-literal=password='a-very-strong-production-password' \
       -n pedido-app-prod
     ```
+     
+    It is also possible to define the secret using a private yaml file (you shouldn't share this file with anyone)
+    
+    ```
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: production-v1-secret # The name of the secret
+      namespace: pedido-app-prod # important, here you must specify the namespace in which your app lives
+    type: Opaque
+    stringData:
+      password: VerySecureProdPassword # THe password that you want to use
+    ```
+
+    and then you can use `kubectl apply -f <secret-yaml-file.yaml>`
+    
 2.  In the environment-specific values file (e.g., `values-prod.yaml`), you specify the name of this secret:
     ```yaml
     # in values-prod.yaml
@@ -49,6 +65,8 @@ For production and other secure environments, the chart is designed to use a pre
         existingSecret: "production-v1-secret"
     ```
 3.  When Helm deploys the chart, both the PostgreSQL subchart and the backend deployment will be configured to source the database password from this single, secure, externally-managed secret. The chart itself will not create any secrets.
+
+
 
 
 ### Architecture Diagram
