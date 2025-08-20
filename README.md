@@ -172,6 +172,8 @@ helm search repo esteban-charts
 
 ### Step 2: Install the Chart for
 
+for the dev or production environment you can clone the repo, to acess the configurations for each environment, feel free to modify the configurations according to your requirements
+
 - Dev environment
     Deploy the application to the `pedido-app-dev` namespace:
     
@@ -192,8 +194,12 @@ helm search repo esteban-charts
       --create-namespace
     ```
 
+    If you choose this enviroment make sure that you have the secret deployed 
+
 - Testing environment (the least set up required)
     Deploy the app to the `pedido-app-test` namespace:
+
+    Only recommended for testing environments, if you don't care about the security or customization of the app
     
     ```bash
     helm install pedido-app-prod esteban-charts/parcial-1 \
