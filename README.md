@@ -265,9 +265,30 @@ After running this, you must configure your DNS provider to point `prod.estebanm
 
 ### Option 3: Full GitOps Deployment with ArgoCD (Recommended)
 
-This is the most advanced and recommended method for managing deployments, as it automates the entire process.
+This is the most advanced and recommended method for managing deployments, as it automates the entire process from Git to your cluster.
 
-**Step 1: Clone the Repository**
+**Step 1: Install and Access ArgoCD**
+This is a one-time setup for your Kubernetes cluster. If ArgoCD is already installed, you can skip to the next step.
+
+*   **Install ArgoCD:** Use the official manifest from the ArgoCD project. This will install all the necessary components in a new `argocd` namespace.
+    ```bash
+    kubectl create namespace argocd
+    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    ```
+
+*   **Access the ArgoCD UI:** To log in to the ArgoCD dashboard, you can expose it on your local machine using `port-forward`.
+    ```bash
+    kubectl port-forward svc/argocd-server -n argocd 8080:443
+    ```
+    You can now access the UI by navigating to `https://localhost:8080` in your browser.
+
+*   **Retrieve the Initial Admin Password:** The initial password is automatically generated and stored in a secret. Retrieve it with the following command:
+    ```bash
+    kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+    ```
+    Log in to the UI with the username `admin` and the password you just retrieved.
+
+**Step 2: Clone the Repository**
 The easiest way to get started is to clone this repository, which contains the pre-configured ArgoCD Application definitions and environment-specific values files.
 
 ```bash
@@ -275,13 +296,21 @@ git clone https://github.com/EstebanForero/parcial-1.git
 cd parcial-1
 ```
 
-**Step 2: Prepare the Environment**
-Before applying the definitions, ensure you have:
-1.  An ArgoCD instance running in your cluster.
-2.  Created the production secret (`production-v1-secret`) in the `pedido-app-prod` namespace as described in Step 2.1.
+**Step 3: Prepare the Production Environment Secret**
+Before deploying the production application, you must manually create the external secret in the `pedido-app-prod` namespace. ArgoCD will sync the application, but it relies on this secret already being present.
 
-**Step 3: Apply the ArgoCD Application Definitions**
-Apply the manifest files to your cluster. ArgoCD will detect them and automatically deploy and manage your applications.
+```bash
+# Ensure the namespace exists first
+kubectl create namespace pedido-app-prod
+
+# Create the secret
+kubectl create secret generic production-v1-secret \
+  --from-literal=password='a-very-strong-production-password' \
+  -n pedido-app-prod
+```
+
+**Step 4: Apply the ArgoCD Application Definitions**
+These manifest files tell your ArgoCD instance which Git repository to monitor and where to deploy the applications. Apply them to your cluster:
 
 ```bash
 # Apply the definition for the development environment
@@ -291,8 +320,7 @@ kubectl apply -f environments/dev/application-dev.yaml
 kubectl apply -f environments/prod/application-prod.yaml
 ```
 
-ArgoCD will now take over. Any changes you commit and push to the `development` or `master` branches of the repository will be automatically synchronized to your cluster.
-
+ArgoCD will now take over. You will see `pedido-app-dev` and `pedido-app-prod` appear in the ArgoCD UI. Any changes you commit and push to the `development` or `master` branches of the repository will be automatically synchronized to your cluster.
 
 ## DNS Configuration
 
@@ -314,7 +342,7 @@ For local testing with the dev environment, add the following to your `/etc/host
 <INGRESS_IP> dev.parcial-1.local
 ```
 
-## Installing the Ingress Controller
+## Installing the external Ingress Controller
 
 An NGINX Ingress controller is required to handle Ingress resources. It is installed externally rather than as a dependency in the Helm chart, which is a better practice for the following reasons:
 - **Separation of Concerns**: Keeping the Ingress controller as a separate component avoids coupling it with the application chart, making the chart more portable and reusable.
