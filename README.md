@@ -147,7 +147,10 @@ This entire process is fully automated, ensuring that only tested and verified c
 
 <img width="804" height="453" alt="image" src="https://github.com/user-attachments/assets/38ba8e21-aa25-4e95-8646-334d8f3713ed" />
 
-<a href="https://prod.estebanmf.space/" target="_blank" rel="noopener noreferrer">demo_page</a>
+<a href="https://prod.estebanmf.space/" target="_blank" rel="noopener noreferrer">demo_production_page</a>
+
+
+<a href="http://138.197.225.67/" target="_blank" rel="noopener noreferrer">demo_development_page</a>
 
 ## Installation with Helm (Manual)
 
