@@ -372,8 +372,8 @@ Note the external IP of the `ingress-nginx-controller` service for DNS configura
 ## Accessing the Application
 
 ### Dev Environment
-- **Frontend**: `http://dev.parcial-1.local/`
-- **Backend API**: `http://dev.parcial-1.local/api`
+- **Frontend**: `http://138.197.225.67/`
+- **Backend API**: `http://138.197.225.67/api`
 - **Namespace**: `pedido-app-dev`
 
 ### Prod Environment  
@@ -429,11 +429,6 @@ The database hostname is automatically generated using `{{ .Release.Name }}-post
 - **Resource Limits**: All containers have defined CPU and memory limits
 - **Non-root Execution**: Containers run with appropriate security contexts
 - **Network Policies**: Ingress rules properly configured for service isolation
-
-**DNS Resolution Issues:**
-- Verify external IP: `kubectl get svc -n ingress-nginx`
-- Check DNS propagation: `nslookup prod.estebanmf.space`
-- For local testing, verify `/etc/hosts` entries
 
 ## Additional Resources and sources
 
