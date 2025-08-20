@@ -163,9 +163,9 @@ Before you can install the chart, you need to add its repository to your local H
 ```bash
 # Add the chart repository
 helm repo add esteban-charts https://EstebanForero.github.io/parcial-1
-'''
+```
 
-''' bash
+``` bash
 # Update your local cache to fetch the latest chart information
 helm repo update
 ```
