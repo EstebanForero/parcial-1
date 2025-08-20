@@ -1,7 +1,7 @@
 backend:
   replicaCount: 1
-  # image:
-  #   tag: "1.15.0"
+  image:
+    tag: "debug"
   
   resources:
     requests:
@@ -20,6 +20,10 @@ postgresql:
   primary:
     persistence:
       size: "2Gi"
+  auth:
+    database: mydb
+    username: esteban
+    password: aVeryStrongAndSecureDevPassword
 
 ingress:
   enabled: true

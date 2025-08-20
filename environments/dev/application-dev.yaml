@@ -10,7 +10,7 @@ spec:
 
   source:
     repoURL: 'https://github.com/EstebanForero/parcial-1'
-    targetRevision: HEAD
+    targetRevision: development
     path: .
 
     helm:
