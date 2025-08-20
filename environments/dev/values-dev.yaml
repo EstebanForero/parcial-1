@@ -24,8 +24,6 @@ postgresql:
 ingress:
   enabled: true
   className: "nginx"
-  hosts:
-    - host: ""
 
 ingress-nginx:
   enabled: false
