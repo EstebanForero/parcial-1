@@ -371,7 +371,7 @@ For local testing with the dev environment, add the following to your `/etc/host
 
 ## Installing the external Ingress Controller
 
-An NGINX Ingress controller is required to handle Ingress resources. It is installed externally rather than as a dependency in the Helm chart, which is a better practice for the following reasons:
+An NGINX Ingress controller is required to handle Ingress resources. It can be installed externally rather than as a dependency in the Helm chart, which is a better practice for the following reasons:
 - **Separation of Concerns**: Keeping the Ingress controller as a separate component avoids coupling it with the application chart, making the chart more portable and reusable.
 - **Cluster Management**: The Ingress controller is a cluster-wide resource, best managed independently to ensure it serves multiple applications consistently.
 - **Customization**: External installation allows for tailored configuration (e.g., `LoadBalancer` service type) without altering the application chart.
