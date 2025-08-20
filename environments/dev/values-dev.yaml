@@ -16,6 +16,9 @@ frontend:
   #   tag: "1.2.0"
   replicaCount: 1
 
+  config:
+    vite_backend_url: http://138.197.225.67
+
 postgresql:
   primary:
     persistence:
