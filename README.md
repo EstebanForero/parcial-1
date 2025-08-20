@@ -156,6 +156,26 @@ This entire process is fully automated, ensuring that only tested and verified c
 
 This guide provides a step-by-step approach to deploying the application, starting from a quick test and progressing to a full, production-grade GitOps installation.
 
+### Step 1: Add the Helm Repository (Prerequisite for all options)
+
+Before you can install the chart, you need to add its repository to your local Helm client. This is a one-time setup.
+
+```bash
+# Add the chart repository
+helm repo add esteban-charts https://EstebanForero.github.io/parcial-1
+'''
+
+''' bash
+# Update your local cache to fetch the latest chart information
+helm repo update
+```
+You can verify that the chart is available by running a search:
+
+``` bash
+helm search repo esteban-charts
+# Output should show the 'parcial-1' chart
+```
+
 ### Option 1: Quick Start / Test Deployment
 
 This method is perfect for quickly launching the application in a new or temporary environment. It requires the least amount of configuration and deploys the application with its own bundled Ingress controller.
