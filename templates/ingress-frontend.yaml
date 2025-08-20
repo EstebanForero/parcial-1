@@ -4,7 +4,10 @@ kind: Ingress
 metadata:
   name: {{ .Release.Name }}-ingress-frontend
   labels:
-    # ...
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
   annotations:
     nginx.ingress.kubernetes.io/try-files: $uri $uri/ /index.html
 spec:
