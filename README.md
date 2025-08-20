@@ -191,7 +191,7 @@ This approach is for setting up a more robust environment manually. It involves 
 **Create pedido-app-prod namespace**
 
 ``` bash
-kubectl create pedido-app-prod
+kubectl create namespace pedido-app-prod
 ```
 
 
