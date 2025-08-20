@@ -348,15 +348,15 @@ The backend includes an HPA configuration for automatic scaling:
 ### Environment-Specific Configurations
 
 **Dev Environment (`values-dev.yaml`)**:
-- Backend: 1 replica, `50m CPU`/`256Mi memory` requests, `100m CPU`/`512Mi memory` limits, image tag `latest`
-- Frontend: 1 replica, image tag `1.2.0`
-- PostgreSQL: 2Gi persistence
+- Backend: 1 replica, `50m CPU`/`256Mi memory` requests, `100m CPU`/`512Mi memory` limits.
+- Frontend: 1 replica.
+- PostgreSQL: 2Gi persistence. **Credentials provided via plaintext password in values file.**
 - Ingress: `dev.parcial-1.local`
 
 **Prod Environment (`values-prod.yaml`)**:
-- Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits, image tag `latest`
-- Frontend: 2 replicas, image tag `1.2.0`, `VITE_BACKEND_URL: https://prod.estebanmf.space/api`
-- PostgreSQL: 10Gi persistence  
+- Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits.
+- Frontend: 2 replicas.
+- PostgreSQL: 10Gi persistence. **Credentials securely sourced from an existing secret named `production-v1-secret`.**
 - Ingress: `prod.estebanmf.space`
 
 ### Automated Database Host Configuration
