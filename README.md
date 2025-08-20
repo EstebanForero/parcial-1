@@ -1,5 +1,11 @@
 # Application Helm Chart for advanced architectural patterns
 
+## Team members
+
+- **Esteban Fernando Forero Montejo**
+- **Carlos David Cruz Pavas**
+- **Juan Felipe Cepeda Uribe**
+
 This repository contains a Helm chart (`parcial-1`) for deploying a pedido management system with a PostgreSQL database, a Rust backend, and a React frontend. The deployment is managed using Helm for packaging and ArgoCD for continuous delivery across two environments: `dev` (`pedido-app-dev`) and `prod` (`pedido-app-prod`). This project fulfills the requirements for the "Parcial I - Patrones arquitectónicos avanzados" assignment.
 
 ## Architecture Overview
