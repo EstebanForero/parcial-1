@@ -51,7 +51,7 @@ frontend:
     port: 80
   
   config:
-    vite_backend_url: "http://chart-example.local/api"
+    vite_backend_url: "/api"
 
 # PostgreSQL Dependency Configuration
 postgresql:
