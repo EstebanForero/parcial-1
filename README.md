@@ -152,136 +152,152 @@ This entire process is fully automated, ensuring that only tested and verified c
 
 <a href="http://138.197.225.67/" target="_blank" rel="noopener noreferrer">demo_development_page</a>
 
-## Installation with Helm (Manual)
+Of course. You've correctly identified that the installation section can be much clearer by presenting it as a progressive guide, from a simple test to a full GitOps setup.
 
-### Step 1: Add the Helm Repository
-The Helm chart is hosted at `https://EstebanForero.github.io/parcial-1`.
+Here is the replacement for the `## Installation with Helm (Manual)` section, written to follow that logical flow.
+
+```markdown
+## Installation Guide
+
+This guide provides a step-by-step approach to deploying the application, starting from a quick test and progressing to a full, production-grade GitOps installation.
+
+### Option 1: Quick Start / Test Deployment
+
+This method is perfect for quickly launching the application in a new or temporary environment. It requires the least amount of configuration and deploys the application with its own bundled Ingress controller.
+
+**Step 1: Install the Chart**
+Run the following command to deploy the application into a new namespace called `pedido-app-test`.
 
 ```bash
-helm repo add esteban-charts https://EstebanForero.github.io/parcial-1
-helm repo update
+helm install pedido-app-prod esteban-charts/parcial-1 \
+  --namespace pedido-app-test \
+  --create-namespace
 ```
 
-Verify the chart is available:
+**Step 2: Find the Application IP Address**
+After a minute or two, the bundled Ingress controller will be assigned an external IP address by your cloud provider. You can find it by running:
+
 ```bash
-helm search repo esteban-charts
-# Output:
-# NAME                     CHART VERSION APP VERSION DESCRIPTION
-# esteban-charts/parcial-1 0.1.0         1.0.0       A Helm chart for deploying the frontend and backend...
+kubectl get ingress -n pedido-app-test
+# You will see an output like this:
+# NAME                               CLASS   HOSTS   ADDRESS          PORTS   AGE
+# pedido-app-prod-ingress-backend    nginx   *       143.244.201.58   80      2m33s
+# pedido-app-prod-ingress-frontend   nginx   *       143.244.201.58   80      2m33s
 ```
 
-### Step 2: Install the Chart for
+You can now access your application directly using the IP address from the `ADDRESS` column (e.g., `http://143.244.201.58`).
 
-for the dev or production environment you can clone the repo, to acess the configurations for each environment, feel free to modify the configurations according to your requirements
+---
 
-- Dev environment
-    Deploy the application to the `pedido-app-dev` namespace:
-    
+### Option 2: Production-Like Manual Installation
+
+This approach is for setting up a more robust environment manually. It involves creating a dedicated secret for the database and making a conscious choice about how to manage the Ingress controller, but still without using ArgoCD.
+
+**Step 2.1: Create the Production Secret**
+For a production environment, you must create a Kubernetes Secret to hold the database password externally. You have two options:
+
+*   **Option A (Command-line):**
     ```bash
-    helm install pedido-app-dev esteban-charts/parcial-1 \
-      -f environments/dev/values-dev.yaml \
-      --namespace pedido-app-dev \
-      --create-namespace
+    kubectl create secret generic production-v1-secret \
+      --from-literal=password='a-very-strong-production-password' \
+      -n pedido-app-prod
     ```
 
-- Production environment
-    Deploy the application to the `pedido-app-prod` namespace:
-    
-    ```bash
-    helm install pedido-app-prod esteban-charts/parcial-1 \
-      -f environments/prod/values-prod.yaml \
-      --namespace pedido-app-prod \
-      --create-namespace
+*   **Option B (YAML file):** Create a file (e.g., `prod-secret.yaml`) and apply it. **Do not commit this file to Git.**
+    ```yaml
+    # prod-secret.yaml
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: production-v1-secret
+      namespace: pedido-app-prod
+    type: Opaque
+    stringData:
+      password: VerySecureProdPassword
+    ```
+    Then apply it: `kubectl apply -f prod-secret.yaml`
+
+**Step 2.2: Prepare Your Configuration File**
+Create a local file named `my-prod-values.yaml`. This file will contain the bare minimum configuration needed. You must decide how to handle the Ingress controller:
+
+*   **Using a Pre-existing Ingress Controller (Recommended):** If your cluster already has a shared NGINX Ingress controller, tell the chart not to install its own. This is the best practice.
+
+    ```yaml
+    # my-prod-values.yaml
+    postgresql:
+      auth:
+        # Use the secret you created in the previous step
+        existingSecret: "production-v1-secret"
+
+    # Tell the chart to use the existing, cluster-wide Ingress controller
+    ingress-nginx:
+      enabled: false
     ```
 
-    If you choose this enviroment make sure that you have the secret deployed 
+*   **Using the Bundled Ingress Controller:** If you want this deployment to be self-contained with its own Ingress controller, you can omit the `ingress-nginx` block, as it defaults to `true`.
 
-- Testing environment (the least set up required)
-    Deploy the app to the `pedido-app-test` namespace:
-
-    Only recommended for testing environments, if you don't care about the security or customization of the app
-    
-    ```bash
-    helm install pedido-app-prod esteban-charts/parcial-1 \
-      --namespace pedido-app-test \
-      --create-namespace
+    ```yaml
+    # my-prod-values.yaml
+    postgresql:
+      auth:
+        # Use the secret you created in the previous step
+        existingSecret: "production-v1-secret"
+    # By omitting 'ingress-nginx', it will default to 'enabled: true'
     ```
 
-### Step 4: Verify Deployment
-Check the status of the pods in each namespace:
+**Step 2.3: Install the Chart**
+Now, install the chart using your custom values file.
 
 ```bash
-kubectl get pods -n pedido-app-dev
-kubectl get pods -n pedido-app-prod
+helm install pedido-app-prod esteban-charts/parcial-1 \
+  -f my-prod-values.yaml \
+  --namespace pedido-app-prod \
+  --create-namespace
 ```
+At this point, your application is running securely but is still only accessible via the Ingress controller's IP address.
 
-Verify the Ingress resources:
-```bash
-kubectl get ingress -n pedido-app-dev
-kubectl get ingress -n pedido-app-prod
-```
-
-Check HPA status:
-```bash
-kubectl get hpa -n pedido-app-dev
-kubectl get hpa -n pedido-app-prod
-```
-
-## ArgoCD Integration
-
-ArgoCD is used for continuous deployment, automatically synchronizing the cluster with the Git repository (`https://github.com/EstebanForero/parcial-1`). It has been installed in the `argocd` namespace and is active (e.g., `argocd Active 3h36m`).
-
-### Installation of ArgoCD (if necessary)
-If ArgoCD is not already installed, deploy it using the official Helm chart:
+**Step 2.4 (Optional): Upgrade to Use a Hostname**
+Once the application is running, you can easily upgrade it to use a proper domain name.
 
 ```bash
-helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
-helm install argocd argo/argo-cd --namespace argocd --create-namespace
+helm upgrade pedido-app-prod esteban-charts/parcial-1 \
+  --namespace pedido-app-prod \
+  --set ingress.hosts.host="prod.estebanmf.space"
 ```
+After running this, you must configure your DNS provider to point `prod.estebanmf.space` to your Ingress controller's external IP address, as described in the "DNS Configuration" section.
 
-Access the ArgoCD UI by port-forwarding:
-```bash
-kubectl port-forward svc/argocd-server -n argocd 8080:80
-```
+---
 
-Log in with the default admin password (retrieve it with `kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d`).
+### Option 3: Full GitOps Deployment with ArgoCD (Recommended)
 
-### Step 1: Apply ArgoCD Application Definitions
-Apply the ArgoCD `Application` resources for both environments:
+This is the most advanced and recommended method for managing deployments, as it automates the entire process.
 
-```bash
-kubectl apply -f environments/dev/application-dev.yaml -n argocd
-kubectl apply -f environments/prod/application-prod.yaml -n argocd
-```
-
-### Step 2: Verify ArgoCD Synchronization
-Access the ArgoCD UI or use the CLI to check the application status:
+**Step 1: Clone the Repository**
+The easiest way to get started is to clone this repository, which contains the pre-configured ArgoCD Application definitions and environment-specific values files.
 
 ```bash
-argocd app get pedido-app-dev
-argocd app get pedido-app-prod
+git clone https://github.com/EstebanForero/parcial-1.git
+cd parcial-1
 ```
 
-The `syncPolicy.automated` settings (`prune: true`, `selfHeal: true`) ensure that any changes to the Git repository (e.g., updating `values-dev.yaml` or `values-prod.yaml`) are automatically applied to the cluster.
+**Step 2: Prepare the Environment**
+Before applying the definitions, ensure you have:
+1.  An ArgoCD instance running in your cluster.
+2.  Created the production secret (`production-v1-secret`) in the `pedido-app-prod` namespace as described in Step 2.1.
 
-### Step 3: Demonstrate GitOps
-To demonstrate automatic synchronization, you can manually update a value in the Git repository. For example, changing a replica count in `values-dev.yaml`.
+**Step 3: Apply the ArgoCD Application Definitions**
+Apply the manifest files to your cluster. ArgoCD will detect them and automatically deploy and manage your applications.
 
-**Note**: The process of updating the application's `image.tag` is fully automated by our Jenkins CI/CD pipeline. When a new version of the frontend or backend is built, Jenkins automatically updates the `tag` in the main `values.yaml` file and pushes the change, which ArgoCD then deploys.
+```bash
+# Apply the definition for the development environment
+kubectl apply -f environments/dev/application-dev.yaml
 
-To manually test the GitOps flow:
-1. Update a value in the Git repository, e.g., change `frontend.replicaCount` in `environments/dev/values-dev.yaml` from `1` to `2`.
-2. Commit and push the change:
-   ```bash
-   git commit -m "Test GitOps: Scale frontend replicas for dev"
-   git push origin master
-   ```
-3. ArgoCD will detect the change and update the pedido-app-dev namespace automatically. Verify in the ArgoCD UI or with:
-  ``` bash
-  argocd app sync pedido-app-dev
-  kubectl get pods -n pedido-app-dev
-  ```
+# Apply the definition for the production environment
+kubectl apply -f environments/prod/application-prod.yaml
+```
+
+ArgoCD will now take over. Any changes you commit and push to the `development` or `master` branches of the repository will be automatically synchronized to your cluster.
+
 
 ## DNS Configuration
 
