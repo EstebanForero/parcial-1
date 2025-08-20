@@ -18,11 +18,29 @@ spec:
           imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.backend.service.port }}
+          
+          {{- if .Values.postgresql.auth.existingSecret }}
+          # CASE 1: When the an existing secret is specified
+          envFrom:
+            - configMapRef:
+                name: "{{ .Values.backend.name }}-configmap"
+          env:
+            - name: DB_PASSWORD # The env var the backend needs
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.auth.existingSecret }}
+                  # The key inside the file, in this case, passwordd
+                  key: password
+          {{- else }}
+
+          # CASE 2: Using the password from values.yaml
           envFrom:
             - configMapRef:
                 name: "{{ .Values.backend.name }}-configmap"
             - secretRef:
+                
                 name: "{{ .Values.backend.name }}-secret"
+          {{- end }}
 
           resources:
             {{- toYaml .Values.backend.resources | nindent 12 }}
