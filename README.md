@@ -170,25 +170,36 @@ helm search repo esteban-charts
 # esteban-charts/parcial-1 0.1.0         1.0.0       A Helm chart for deploying the frontend and backend...
 ```
 
-### Step 2: Install the Chart for Dev Environment
-Deploy the application to the `pedido-app-dev` namespace:
+### Step 2: Install the Chart for
 
-```bash
-helm install pedido-app-dev esteban-charts/parcial-1 \
-  -f environments/dev/values-dev.yaml \
-  --namespace pedido-app-dev \
-  --create-namespace
-```
+- Dev environment
+    Deploy the application to the `pedido-app-dev` namespace:
+    
+    ```bash
+    helm install pedido-app-dev esteban-charts/parcial-1 \
+      -f environments/dev/values-dev.yaml \
+      --namespace pedido-app-dev \
+      --create-namespace
+    ```
 
-### Step 3: Install the Chart for Prod Environment
-Deploy the application to the `pedido-app-prod` namespace:
+- Production environment
+    Deploy the application to the `pedido-app-prod` namespace:
+    
+    ```bash
+    helm install pedido-app-prod esteban-charts/parcial-1 \
+      -f environments/prod/values-prod.yaml \
+      --namespace pedido-app-prod \
+      --create-namespace
+    ```
 
-```bash
-helm install pedido-app-prod esteban-charts/parcial-1 \
-  -f environments/prod/values-prod.yaml \
-  --namespace pedido-app-prod \
-  --create-namespace
-```
+- Testing environment (the least set up required)
+    Deploy the app to the `pedido-app-test` namespace:
+    
+    ```bash
+    helm install pedido-app-prod esteban-charts/parcial-1 \
+      --namespace pedido-app-prod \
+      --create-namespace
+    ```
 
 ### Step 4: Verify Deployment
 Check the status of the pods in each namespace:
