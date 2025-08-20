@@ -152,11 +152,6 @@ This entire process is fully automated, ensuring that only tested and verified c
 
 <a href="http://138.197.225.67/" target="_blank" rel="noopener noreferrer">demo_development_page</a>
 
-Of course. You've correctly identified that the installation section can be much clearer by presenting it as a progressive guide, from a simple test to a full GitOps setup.
-
-Here is the replacement for the `## Installation with Helm (Manual)` section, written to follow that logical flow.
-
-```markdown
 ## Installation Guide
 
 This guide provides a step-by-step approach to deploying the application, starting from a quick test and progressing to a full, production-grade GitOps installation.
