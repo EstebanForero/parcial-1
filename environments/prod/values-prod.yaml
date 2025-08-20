@@ -15,8 +15,8 @@ frontend:
   # image:
   #   tag: "1.2.0"
 
-  config:
-    vite_backend_url: https://prod.estebanmf.space/api
+  # config:
+  #   vite_backend_url: https://prod.estebanmf.space/api
 
   replicaCount: 2
 
