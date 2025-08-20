@@ -188,6 +188,13 @@ You can now access your application directly using the IP address from the `ADDR
 
 This approach is for setting up a more robust environment manually. It involves creating a dedicated secret for the database and making a conscious choice about how to manage the Ingress controller, but still without using ArgoCD.
 
+**Create pedido-app-prod namespace**
+
+``` bash
+kubectl create pedido-app-prod
+```
+
+
 **Step 2.1: Create the Production Secret**
 For a production environment, you must create a Kubernetes Secret to hold the database password externally. You have two options:
 
