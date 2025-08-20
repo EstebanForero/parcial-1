@@ -39,27 +39,25 @@ These components are orchestrated using Kubernetes resources (Deployments, Servi
 
 ```
 parcial-1/
-├── Chart.yaml                      # Helm chart metadata
-├── values.yaml                     # Default values
+├── Chart.yaml
+├── values.yaml
 ├── environments/
 │   ├── dev/
-│   │   ├── application-dev.yaml    # ArgoCD Application for dev
-│   │   └── values-dev.yaml         # Dev-specific values
+│   │   ├── application-dev.yaml
+│   │   └── values-dev.yaml
 │   └── prod/
-│       ├── application-prod.yaml   # ArgoCD Application for prod
-│       └── values-prod.yaml        # Prod-specific values
+│       ├── application-prod.yaml
+│       └── values-prod.yaml
 ├── templates/
-│   ├── backend-deployment.yaml     # Backend Deployment with health checks
-│   ├── backend-service.yaml        # Backend Service
-│   ├── backend-hpa.yaml           # Backend HorizontalPodAutoscaler
-│   ├── frontend-deployment.yaml   # Frontend Deployment with health checks
-│   ├── frontend-service.yaml      # Frontend Service
-│   ├── ingress.yaml               # Ingress for routing
-│   ├── configmap.yaml             # Backend configuration (auto DB host)
-│   └── secret.yaml                # Database credentials
-├── .github/workflows/
-│   └── deploy-helm-repo.yml       # GitHub Actions for Helm repo
-└── README.md                      # This file
+│   ├── backend-deployment.yaml
+│   ├── backend-service.yaml
+│   ├── backend-hpa.yaml
+│   ├── frontend-deployment.yaml
+│   ├── frontend-service.yaml
+│   ├── ingress-backend.yaml
+│   ├── ingress-frontend.yaml
+│   ├── configmap.yaml
+│   └── secret.yaml
 ```
 
 ## Published Helm Chart
