@@ -2,32 +2,21 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ .Release.Name }}-ingress
+  name: {{ .Release.Name }}-ingress-frontend
   labels:
     app.kubernetes.io/name: {{ .Chart.Name }}
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
     {{- range .Values.ingress.hosts }}
-    - {{- if .host }}
-      host: {{ .host | quote }}
-      {{- end }}
+    - host: {{ .host | quote }}
       http:
         paths:
-          - path: {{ .paths.backend }}(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: {{ $.Values.backend.name }}-service
-                port:
-                  number: {{ $.Values.backend.service.port }}
-          - path: {{ .paths.frontend }}(.*)
-            pathType: ImplementationSpecific
+          - path: /
+            pathType: Prefix
             backend:
               service:
                 name: {{ $.Values.frontend.name }}-service
