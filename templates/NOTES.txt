@@ -1,34 +1,58 @@
-Your application has been deployed.
+{{- define "parcial-1.access.notes" -}}
+Your application has been successfully deployed.
 
 {{- if .Values.ingress.enabled }}
-  {{- if .Values.ingress_nginx.enabled }}
-    {{- /* CASE 1: The chart is installing its own ingress-nginx controller */ -}}
-    To access your application, you need the External IP of the Ingress controller.
+  {{- /*
+  CASE 1: Ingress is enabled.
+  We need to determine if it's the bundled controller or an external one.
+  */ -}}
+  {{- if (index .Values "ingress-nginx").enabled }}
+    {{- /* CASE 1A: The chart is installing its OWN ingress-nginx controller. */ -}}
+    To access your application, you need the External IP of the newly deployed Ingress controller.
     It may take a minute for the LoadBalancer IP to be available.
 
-    You can get the IP by running:
+    You can get the IP by running this command:
     kubectl get svc --namespace {{ .Release.Namespace }} {{ .Release.Name }}-ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 
-    Once you have the IP, you can access your application at:
-    Frontend: http://<EXTERNAL_IP>/
-    Backend API: http://<EXTERNAL_IP>/api
+    Once you have the IP, access your application at: http://<EXTERNAL_IP>/
 
-  {{- else if .Values.ingress.hosts }}
-    {{- /* CASE 2: The chart uses a pre-existing Ingress and has a hostname */ -}}
-    Your application is configured to be accessed via the following host:
+  {{- else }}
+    {{- /* CASE 1B: The chart is using a PRE-EXISTING, cluster-wide Ingress controller. */ -}}
+    {{- $host := "" }}
+    {{- if .Values.ingress.hosts }}
+      {{- $host = (first .Values.ingress.hosts).host }}
+    {{- end }}
 
-    Frontend: http://{{ (first .Values.ingress.hosts).host }}/
-    Backend API: http://{{ (first .Values.ingress.hosts).host }}/api
+    {{- if $host }}
+      {{- /* The user has specified a hostname. */ -}}
+      Your application is configured to be accessed via the following host:
 
-    Please ensure your DNS is configured to point this host to your cluster's Ingress controller IP.
-    For local development, you can add the following to your /etc/hosts file:
-    <INGRESS_IP> {{ (first .Values.ingress.hosts).host }}
+      Frontend: http://{{ $host }}/
+      Backend API: http://{{ $host }}/api
+
+      Please ensure your DNS is configured to point "{{ $host }}" to your cluster's shared Ingress controller IP.
+
+    {{- else }}
+      {{- /* The user has NOT specified a hostname and is using a shared controller. */ -}}
+      To access your application, you need the External IP of your cluster's shared Ingress controller.
+
+      If you don't know the IP, you can often find it by running:
+      kubectl get svc --namespace ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+
+      Once you have the IP, access your application at: http://<EXTERNAL_IP>/
+
+    {{- end }}
   {{- end }}
 {{- else }}
+  {{- /*
+  CASE 2: Ingress is disabled.
+  The services are not exposed externally.
+  */ -}}
   Your application was deployed without an Ingress. To access it, you will need to configure port-forwarding.
+
   For example, to access the backend:
   kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ .Values.backend.name }}-service {{ .Values.backend.service.port }}:{{ .Values.backend.service.port }}
+
 {{- end }}
 {{- end -}}
 
-{{- template "parcial-1.access.notes" . -}}
