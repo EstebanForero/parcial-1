@@ -20,6 +20,55 @@ These components are orchestrated using Kubernetes resources (Deployments, Servi
 - GitOps: ArgoCD automated synchronization
 - Multi-environment: Separate dev and prod configurations
 
+## Security and Secrets Management
+
+This Helm chart implements a robust security model for managing database credentials, supporting two distinct modes to accommodate different environments.
+
+### Mode 1: Auto-Generated Secret (Default for Dev/Testing)
+
+By default, if no existing secret is specified, the chart will automatically create a Kubernetes Secret for the backend. The password used is taken directly from the `postgresql.auth.password` field in the `values.yaml` file.
+
+**Use Case**: Ideal for local development, CI/CD testing, and ephemeral environments where simplicity is prioritized over security.
+
+### Mode 2: Using an Existing Secret (Production Best Practice)
+
+For production and other secure environments, the chart is designed to use a pre-existing Kubernetes Secret. This is the recommended approach as it completely decouples sensitive credentials from the Git repository.
+
+**How it Works:**
+1.  An administrator securely creates a Secret in the target namespace (e.g., `pedido-app-prod`) before deploying the application. This secret **must** contain a key named `password`.
+    ```bash
+    kubectl create secret generic production-v1-secret \
+      --from-literal=password='a-very-strong-production-password' \
+      -n pedido-app-prod
+    ```
+     
+    It is also possible to define the secret using a private yaml file (you shouldn't share this file with anyone)
+    
+    ```
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: production-v1-secret # The name of the secret
+      namespace: pedido-app-prod # important, here you must specify the namespace in which your app lives
+    type: Opaque
+    stringData:
+      password: VerySecureProdPassword # THe password that you want to use
+    ```
+
+    and then you can use `kubectl apply -f <secret-yaml-file.yaml>`
+    
+2.  In the environment-specific values file (e.g., `values-prod.yaml`), you specify the name of this secret:
+    ```yaml
+    # in values-prod.yaml
+    postgresql:
+      auth:
+        existingSecret: "production-v1-secret"
+    ```
+3.  When Helm deploys the chart, both the PostgreSQL subchart and the backend deployment will be configured to source the database password from this single, secure, externally-managed secret. The chart itself will not create any secrets.
+
+
+
+
 ### Architecture Diagram
 
 <img width="786" height="642" alt="image" src="https://github.com/user-attachments/assets/6a00c574-55cf-44be-b8d8-936da18097c8" />
@@ -39,27 +88,25 @@ These components are orchestrated using Kubernetes resources (Deployments, Servi
 
 ```
 parcial-1/
-├── Chart.yaml                      # Helm chart metadata
-├── values.yaml                     # Default values
+├── Chart.yaml
+├── values.yaml
 ├── environments/
 │   ├── dev/
-│   │   ├── application-dev.yaml    # ArgoCD Application for dev
-│   │   └── values-dev.yaml         # Dev-specific values
+│   │   ├── application-dev.yaml
+│   │   └── values-dev.yaml
 │   └── prod/
-│       ├── application-prod.yaml   # ArgoCD Application for prod
-│       └── values-prod.yaml        # Prod-specific values
+│       ├── application-prod.yaml
+│       └── values-prod.yaml
 ├── templates/
-│   ├── backend-deployment.yaml     # Backend Deployment with health checks
-│   ├── backend-service.yaml        # Backend Service
-│   ├── backend-hpa.yaml           # Backend HorizontalPodAutoscaler
-│   ├── frontend-deployment.yaml   # Frontend Deployment with health checks
-│   ├── frontend-service.yaml      # Frontend Service
-│   ├── ingress.yaml               # Ingress for routing
-│   ├── configmap.yaml             # Backend configuration (auto DB host)
-│   └── secret.yaml                # Database credentials
-├── .github/workflows/
-│   └── deploy-helm-repo.yml       # GitHub Actions for Helm repo
-└── README.md                      # This file
+│   ├── backend-deployment.yaml
+│   ├── backend-service.yaml
+│   ├── backend-hpa.yaml
+│   ├── frontend-deployment.yaml
+│   ├── frontend-service.yaml
+│   ├── ingress-backend.yaml
+│   ├── ingress-frontend.yaml
+│   ├── configmap.yaml
+│   └── secret.yaml
 ```
 
 ## Published Helm Chart
@@ -100,7 +147,10 @@ This entire process is fully automated, ensuring that only tested and verified c
 
 <img width="804" height="453" alt="image" src="https://github.com/user-attachments/assets/38ba8e21-aa25-4e95-8646-334d8f3713ed" />
 
-<a href="https://prod.estebanmf.space/" target="_blank" rel="noopener noreferrer">demo_page</a>
+<a href="https://prod.estebanmf.space/" target="_blank" rel="noopener noreferrer">demo_production_page</a>
+
+
+<a href="http://138.197.225.67/" target="_blank" rel="noopener noreferrer">demo_development_page</a>
 
 ## Installation with Helm (Manual)
 
@@ -301,15 +351,15 @@ The backend includes an HPA configuration for automatic scaling:
 ### Environment-Specific Configurations
 
 **Dev Environment (`values-dev.yaml`)**:
-- Backend: 1 replica, `50m CPU`/`256Mi memory` requests, `100m CPU`/`512Mi memory` limits, image tag `latest`
-- Frontend: 1 replica, image tag `1.2.0`
-- PostgreSQL: 2Gi persistence
+- Backend: 1 replica, `50m CPU`/`256Mi memory` requests, `100m CPU`/`512Mi memory` limits.
+- Frontend: 1 replica.
+- PostgreSQL: 2Gi persistence. **Credentials provided via plaintext password in values file.**
 - Ingress: `dev.parcial-1.local`
 
 **Prod Environment (`values-prod.yaml`)**:
-- Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits, image tag `latest`
-- Frontend: 2 replicas, image tag `1.2.0`, `VITE_BACKEND_URL: https://prod.estebanmf.space/api`
-- PostgreSQL: 10Gi persistence  
+- Backend: 3 replicas, `100m CPU`/`100Mi memory` requests, `200m CPU`/`200Mi memory` limits.
+- Frontend: 2 replicas.
+- PostgreSQL: 10Gi persistence. **Credentials securely sourced from an existing secret named `production-v1-secret`.**
 - Ingress: `prod.estebanmf.space`
 
 ### Automated Database Host Configuration
