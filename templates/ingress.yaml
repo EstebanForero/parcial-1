@@ -1,5 +1,5 @@
 {{- if .Values.ingress.enabled }}
-apiVersion: networking.k8s.io/v1
+apiVersion: networking.k.io/v1
 kind: Ingress
 metadata:
   name: {{ .Release.Name }}-ingress
@@ -14,17 +14,19 @@ spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
     {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - {{- if .host }}
+      host: {{ .host | quote }}
+      {{- end }}
       http:
         paths:
-          - path: /api(/|$)(.*)
+          - path: {{ .paths.backend }}(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
               service:
                 name: {{ $.Values.backend.name }}-service
                 port:
                   number: {{ $.Values.backend.service.port }}
-          - path: /()(.*)
+          - path: {{ .paths.frontend }}(.*)
             pathType: ImplementationSpecific
             backend:
               service:

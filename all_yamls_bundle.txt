@@ -1,0 +1,603 @@
+---
+# Path: ./.github/workflows/deploy-helm-repo.yml
+---
+# .github/workflows/deploy-helm-repo.yml
+
+name: Deploy Helm Chart to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Build Helm Artifacts
+        run: |
+          # Asegura un inicio limpio eliminando el directorio 'dist' si existe
+          rm -rf ./dist
+          mkdir ./dist
+          # Empaqueta el chart y genera el índice
+          helm package . --destination ./dist
+          helm repo index ./dist --url https://EstebanForero.github.io/parcial-1
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+
+---
+# Path: ./dist/index.yaml
+---
+apiVersion: v1
+entries:
+  parcial-1:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2025-08-18T15:29:49.953013805-05:00"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 16.7.26
+    description: A Helm chart for deploying the frontend and backend applications
+      with PostgreSQL
+    digest: f90ae77c8972236fd15d449c23caa0ce0f72ea4dc1427f4d3a7ea8dc8aa6dc55
+    name: parcial-1
+    type: application
+    urls:
+    - https://EstebanForero.github.io/parcial-1/parcial-1-0.1.0.tgz
+    version: 0.1.0
+  postgresql:
+  - annotations:
+      category: Database
+      images: |
+        - name: os-shell
+          image: docker.io/bitnami/os-shell:12-debian-12-r50
+        - name: postgres-exporter
+          image: docker.io/bitnami/postgres-exporter:0.17.1-debian-12-r15
+        - name: postgresql
+          image: docker.io/bitnami/postgresql:17.6.0-debian-12-r0
+      licenses: Apache-2.0
+      tanzuCategory: service
+    apiVersion: v2
+    appVersion: 17.6.0
+    created: "2025-08-18T15:29:49.956626566-05:00"
+    dependencies:
+    - name: common
+      repository: oci://registry-1.docker.io/bitnamicharts
+      tags:
+      - bitnami-common
+      version: 2.x.x
+    description: PostgreSQL (Postgres) is an open source object-relational database
+      known for reliability and data integrity. ACID-compliant, it supports foreign
+      keys, joins, views, triggers and stored procedures.
+    digest: 92b4035ddf61e38152dacb29d35525123cf0301bd0c73b5d65ca557876ffa2d7
+    home: https://bitnami.com
+    icon: https://dyltqmyl993wv.cloudfront.net/assets/stacks/postgresql/img/postgresql-stack-220x234.png
+    keywords:
+    - postgresql
+    - postgres
+    - database
+    - sql
+    - replication
+    - cluster
+    maintainers:
+    - name: Broadcom, Inc. All Rights Reserved.
+      url: https://github.com/bitnami/charts
+    name: postgresql
+    sources:
+    - https://github.com/bitnami/charts/tree/main/bitnami/postgresql
+    urls:
+    - https://EstebanForero.github.io/parcial-1/charts/postgresql-16.7.26.tgz
+    version: 16.7.26
+generated: "2025-08-18T15:29:49.949024815-05:00"
+
+
+---
+# Path: ./environments/dev/application-dev.yaml
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pedido-app-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: 'https://github.com/EstebanForero/parcial-1'
+    targetRevision: HEAD
+    path: .
+
+    helm:
+      valueFiles:
+        - environments/dev/values-dev.yaml
+
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: pedido-app-dev
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+
+---
+# Path: ./environments/dev/values-dev.yaml
+---
+backend:
+  replicaCount: 1
+  # image:
+  #   tag: "1.15.0"
+  
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "256Mi"
+    limits:
+      cpu: "100m"
+      memory: "512Mi"
+
+frontend:
+  # image:
+  #   tag: "1.2.0"
+  replicaCount: 1
+
+postgresql:
+  primary:
+    persistence:
+      size: "2Gi"
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: ""
+
+
+---
+# Path: ./environments/prod/values-prod.yaml
+---
+backend:
+  replicaCount: 3 
+  # image:
+  #   tag: "1.13.0" 
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "100Mi"
+    limits:
+      cpu: "200m"
+      memory: "200Mi"
+
+frontend:
+  # image:
+  #   tag: "1.2.0"
+
+  config:
+    vite_backend_url: https://prod.estebanmf.space/api
+
+  replicaCount: 2
+
+postgresql:
+  primary:
+    persistence:
+      size: "10Gi" # Más espacio para prod
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: "prod.estebanmf.space"
+
+
+---
+# Path: ./environments/prod/application-prod.yaml
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pedido-app-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: 'https://github.com/EstebanForero/parcial-1'
+    targetRevision: master
+    path: .
+
+    helm:
+      valueFiles:
+        - environments/prod/values-prod.yaml
+
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: pedido-app-prod
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+
+---
+# Path: ./templates/backend-deployment.yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.backend.name }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.backend.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.backend.name }}
+    spec:
+      containers:
+        - name: {{ .Values.backend.name }}
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.backend.service.port }}
+          envFrom:
+            - configMapRef:
+                name: "{{ .Values.backend.name }}-configmap"
+            - secretRef:
+                name: "{{ .Values.backend.name }}-secret"
+
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.backend.service.port }}
+            initialDelaySeconds: 1
+            periodSeconds: 1
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.backend.service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+
+---
+# Path: ./templates/secret.yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.backend.name }}-secret
+type: Opaque
+stringData:
+  DB_PASSWORD: {{ .Values.postgresql.auth.password | quote }}
+
+
+---
+# Path: ./templates/frontend-service.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.frontend.name }}-service
+spec:
+  type: {{ .Values.frontend.service.type }}
+  ports:
+    - port: {{ .Values.frontend.service.port }}
+      targetPort: {{ .Values.frontend.service.port }}
+      protocol: TCP
+  selector:
+    app: {{ .Values.frontend.name }}
+
+
+---
+# Path: ./templates/configmap.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.backend.name }}-configmap
+data:
+  PORT: {{ .Values.backend.config.port | quote }}
+  DB_HOST: {{ .Release.Name }}-postgresql
+  DB_PORT: {{ .Values.backend.config.db_port | quote }}
+  DB_USER: {{ .Values.postgresql.auth.username | quote }}
+  DB_NAME: {{ .Values.postgresql.auth.database | quote }}
+
+
+---
+# Path: ./templates/ingress.yaml
+---
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-ingress
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - {{- if .host }}
+      host: {{ .host | quote }}
+      {{- end }}
+      http:
+        paths:
+          - path: {{ .paths.backend }}(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ $.Values.backend.name }}-service
+                port:
+                  number: {{ $.Values.backend.service.port }}
+          - path: {{ .paths.frontend }}(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ $.Values.frontend.name }}-service
+                port:
+                  number: {{ $.Values.frontend.service.port }}
+    {{- end }}
+{{- end }}
+
+
+---
+# Path: ./templates/frontend-deployment.yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.frontend.name }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.frontend.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.frontend.name }}
+    spec:
+      containers:
+        - name: {{ .Values.frontend.name }}
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.frontend.service.port }}
+          env:
+            - name: VITE_BACKEND_URL
+              value: {{ .Values.frontend.config.vite_backend_url | quote }}
+
+          resources:
+              {{- toYaml .Values.frontend.resources | nindent 12 }}
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.service.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.frontend.service.port }}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+
+
+---
+# Path: ./templates/backend-service.yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Values.backend.name }}-service"
+spec:
+  type: {{ .Values.backend.service.type }}
+  ports:
+    - port: {{ .Values.backend.service.port }}
+      targetPort: {{ .Values.backend.service.port }}
+      protocol: TCP
+  selector:
+    app: {{ .Values.backend.name }}
+
+
+---
+# Path: ./templates/backend-hpa.yaml
+---
+{{- if .Values.backend.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.backend.name }}-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.backend.name }}
+  minReplicas: {{ .Values.backend.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.backend.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.backend.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}
+
+
+---
+# Path: ./Chart.yaml
+---
+apiVersion: v2
+name: parcial-1
+description: A Helm chart for deploying the frontend and backend applications with PostgreSQL
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
+type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+appVersion: "1.0.0"
+
+dependencies:
+  - name: postgresql
+    version: 16.7.26
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: ingress-nginx
+    version: "4.13.1"
+    repository: https://kubernetes.github.io/ingress-nginx
+    condition: ingress-nginx.enabled
+
+
+---
+# Path: ./values.yaml
+---
+# Backend Configuration
+backend:
+  name: backend-1
+  replicaCount: 1
+  image:
+    repository: esteban1930/backend-1
+    pullPolicy: IfNotPresent
+    tag: "1.31.0"
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+  
+  config:
+    port: "8080"
+    db_port: "5432"
+
+# Frontend Configuration
+frontend:
+  name: frontend-1
+  replicaCount: 1
+  image:
+    repository: esteban1930/frontend-1
+    pullPolicy: IfNotPresent
+    tag: ""
+
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "128Mi"
+
+  service:
+    type: ClusterIP
+    port: 80
+  
+  config:
+    vite_backend_url: "http://chart-example.local/api"
+
+# PostgreSQL Dependency Configuration
+postgresql:
+  enabled: true
+  auth:
+    database: "mydb"
+    username: "esteban"
+    password: "secret"
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+
+# Ingress Global Configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: ""
+      paths:
+        backend: /api
+        frontend: /
+
+ingress-nginx:
+  enabled: false
+  # ingress-nginx chart values can be overriden here, for example
+  # controller:
+  #   replicaCount: 2
+
+

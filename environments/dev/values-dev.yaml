@@ -25,4 +25,7 @@ ingress:
   enabled: true
   className: "nginx"
   hosts:
-    - host: "dev.parcial-1.local"
+    - host: ""
+
+ingress-nginx:
+  enabled: false

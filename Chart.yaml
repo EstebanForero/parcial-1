@@ -28,3 +28,7 @@ dependencies:
     version: 16.7.26
     repository: https://charts.bitnami.com/bitnami
     condition: postgresql.enabled
+  - name: ingress-nginx
+    version: "4.13.1"
+    repository: https://kubernetes.github.io/ingress-nginx
+    condition: ingress-nginx.enabled

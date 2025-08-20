@@ -19,15 +19,6 @@ backend:
     type: ClusterIP
     port: 8080
 
-  ingress:
-    enabled: true
-    className: "nginx"
-    hosts:
-      - host: chart-example.local
-        paths:
-          - path: /api
-            pathType: ImplementationSpecific
-
   autoscaling:
     enabled: true
     minReplicas: 1
@@ -58,14 +49,7 @@ frontend:
   service:
     type: ClusterIP
     port: 80
-  ingress:
-    enabled: true
-    className: "nginx"
-    hosts:
-      - host: chart-example.local
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
+  
   config:
     vite_backend_url: "http://chart-example.local/api"
 
@@ -86,7 +70,13 @@ ingress:
   enabled: true
   className: "nginx"
   hosts:
-    - host: chart-example.local
+    - host: ""
       paths:
         backend: /api
         frontend: /
+
+ingress-nginx:
+  enabled: true
+  # ingress-nginx chart values can be overriden here, for example
+  # controller:
+  #   replicaCount: 2
