@@ -60,6 +60,9 @@ postgresql:
     database: "mydb"
     username: "esteban"
     password: "secret"
+
+    ## Only set this, if you already have an existing secret in your kubernetes cluster, that you want to use
+    existingSecret: ""
   primary:
     persistence:
       enabled: true
