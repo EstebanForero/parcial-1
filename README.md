@@ -20,6 +20,37 @@ These components are orchestrated using Kubernetes resources (Deployments, Servi
 - GitOps: ArgoCD automated synchronization
 - Multi-environment: Separate dev and prod configurations
 
+## Security and Secrets Management
+
+This Helm chart implements a robust security model for managing database credentials, supporting two distinct modes to accommodate different environments.
+
+### Mode 1: Auto-Generated Secret (Default for Dev/Testing)
+
+By default, if no existing secret is specified, the chart will automatically create a Kubernetes Secret for the backend. The password used is taken directly from the `postgresql.auth.password` field in the `values.yaml` file.
+
+**Use Case**: Ideal for local development, CI/CD testing, and ephemeral environments where simplicity is prioritized over security.
+
+### Mode 2: Using an Existing Secret (Production Best Practice)
+
+For production and other secure environments, the chart is designed to use a pre-existing Kubernetes Secret. This is the recommended approach as it completely decouples sensitive credentials from the Git repository.
+
+**How it Works:**
+1.  An administrator securely creates a Secret in the target namespace (e.g., `pedido-app-prod`) before deploying the application. This secret **must** contain a key named `password`.
+    ```bash
+    kubectl create secret generic production-v1-secret \
+      --from-literal=password='a-very-strong-production-password' \
+      -n pedido-app-prod
+    ```
+2.  In the environment-specific values file (e.g., `values-prod.yaml`), you specify the name of this secret:
+    ```yaml
+    # in values-prod.yaml
+    postgresql:
+      auth:
+        existingSecret: "production-v1-secret"
+    ```
+3.  When Helm deploys the chart, both the PostgreSQL subchart and the backend deployment will be configured to source the database password from this single, secure, externally-managed secret. The chart itself will not create any secrets.
+
+
 ### Architecture Diagram
 
 <img width="786" height="642" alt="image" src="https://github.com/user-attachments/assets/6a00c574-55cf-44be-b8d8-936da18097c8" />
