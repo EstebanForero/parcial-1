@@ -36,7 +36,7 @@ frontend:
   image:
     repository: esteban1930/frontend-1
     pullPolicy: IfNotPresent
-    tag: "1.6.0"
+    tag: "1.7.0"
 
   resources:
     requests:
