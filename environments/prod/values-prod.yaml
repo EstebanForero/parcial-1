@@ -12,8 +12,8 @@ backend:
       memory: "200Mi"
 
 frontend:
-  # image:
-  #   tag: "1.2.0"
+  image:
+    tag: "1.6.0"
 
   # config:
   #   vite_backend_url: https://prod.estebanmf.space/api
